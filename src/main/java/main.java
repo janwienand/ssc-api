@@ -32,12 +32,25 @@ public class main {
 
     public static void createApplication() throws UnirestException {
 
-        String body = "{  \"name\": \"3\", \"description\": \"\", \"active\": true, \"committed\": false,  \"project\": {  \"name\": \"java\", \"description\": \"\", \"issueTemplateId\": \"Prioritized-HighRisk-Project-Template\"  }, \"issueTemplateId\": \"Prioritized-HighRisk-Project-Template\"}";
+        String body = "{  \"name\": \"1\",  \"description\": \"\",  \"active\": true,  \"committed\": false,  \"project\": {    \"name\": \"tokentest\",    \"description\": \"\",    \"issueTemplateId\": \"Prioritized-HighRisk-Project-Template\"  },  \"issueTemplateId\": \"Prioritized-HighRisk-Project-Template\"}";
+
+        // {
+        //   "name": "3",
+        //   "description": "",
+        //   "active": true,
+        //   "committed": false,
+        //   "project": {
+        //     "name": "swagger",
+        //     "description": "",
+        //     "issueTemplateId": "Prioritized-HighRisk-Project-Template"
+        //     },
+        //   "issueTemplateId": "Prioritized-HighRisk-Project-Template"
+        // }
 
         HttpResponse<JsonNode> createApplication = Unirest.post("http://18.197.33.109:8080/api/v1/projectVersions")
+                .header("Authorization", "FortifyToken ZDBhYzk4MDEtYmU4ZC00Nzg0LTk0M2EtZjE4YzE4ZWUzZmNm")
                 .header("Content-Type", "application/json; charset=UTF-8")
                 .header("accept", "application/json")
-                .basicAuth("admin", "SSCpasswort123!")
                 .body(body)
                 .asJson();
 
@@ -45,9 +58,20 @@ public class main {
         System.out.println(createApplication.getBody());;
     }
 
+    public static void getProjectVersions() throws UnirestException {
+        HttpResponse<JsonNode> getListOfProjectVersions = Unirest.get("http://18.197.33.109:8080/api/v1/projectVersions")
+                .header("Authorization", "FortifyToken ZDBhYzk4MDEtYmU4ZC00Nzg0LTk0M2EtZjE4YzE4ZWUzZmNm")
+                .header("Content-Type", "application/json; charset=UTF-8")
+                .header("accept", "application/json")
+                .asJson();
+
+        System.out.println(getListOfProjectVersions.getBody());
+    }
+
     public static void main(String[] args) throws UnirestException {
         //testAPI();
-        //createApplication();
+        createApplication();
+        //getProjectVersions();
 
     }
 }
