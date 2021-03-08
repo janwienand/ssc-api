@@ -239,7 +239,23 @@ public class main {
         System.out.println("Copying Users complete!");
         System.out.println("------");
 
+        //Step 4 - Copying responsibilities
+        System.out.println("Step 4 - Copying responsibilities");
+        HttpResponse<JsonNode> getResponsibilitiesFromCurrentVersion = Unirest.get(ssc + "/api/v1/projectVersions/" + currentVersionId + "/responsibilities")
+                .header("Authorization", "FortifyToken " + token)
+                .header("Content-Type", "application/json; charset=UTF-8")
+                .header("accept", "application/json")
+                .asJson();
 
+        HttpResponse<JsonNode> pasteResponsibilities = Unirest.put(ssc + "/api/v1/projectVersions/" + newVersionId + "/responsibilities")
+                .header("Authorization", "FortifyToken " + token)
+                .header("Content-Type", "application/json; charset=UTF-8")
+                .header("accept", "application/json")
+                .body(getResponsibilitiesFromCurrentVersion.getBody().getObject().get("data").toString())
+                .asJson();
+
+        System.out.println("Copying Responsibilities complete!");
+        System.out.println("------");
 
     }
 
