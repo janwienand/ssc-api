@@ -218,7 +218,7 @@ public class main {
                 .body(getAttributesFromCurrentVersion.getBody().getObject().get("data").toString())
                 .asJson();
 
-        System.out.println("Copying complete!");
+        System.out.println("Copying Attributes complete!");
         System.out.println("------");
 
         //Step 3 - Copying users
@@ -228,6 +228,17 @@ public class main {
                 .header("Content-Type", "application/json; charset=UTF-8")
                 .header("accept", "application/json")
                 .asJson();
+
+        HttpResponse<JsonNode> pasteUsers = Unirest.put(ssc + "/api/v1/projectVersions/" + newVersionId + "/authEntities")
+                .header("Authorization", "FortifyToken " + token)
+                .header("Content-Type", "application/json; charset=UTF-8")
+                .header("accept", "application/json")
+                .body(getUsersFromCurrentVersion.getBody().getObject().get("data").toString())
+                .asJson();
+
+        System.out.println("Copying Users complete!");
+        System.out.println("------");
+
 
 
     }
