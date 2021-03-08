@@ -202,14 +202,6 @@ public class main {
                 .header("accept", "application/json")
                 .asJson();
 
-        /*//Writing response to json file
-        FileWriter file = new FileWriter("C:/dev/json/output.json");
-        file.write(String.valueOf(getAttributesFromCurrentVersion.getBody().getObject()));
-        file.close();*/
-
-        //print out attributes from currentVersionId
-        //System.out.println("attribute data: " + getAttributesFromCurrentVersion.getBody().getObject().get("data").toString());
-
         //Paste Attributes in new Version
         HttpResponse<JsonNode> pasteAttributes = Unirest.put(ssc + "/api/v1/projectVersions/" + newVersionId + "/attributes")
                 .header("Authorization", "FortifyToken " + token)
@@ -255,6 +247,27 @@ public class main {
                 .asJson();
 
         System.out.println("Copying Responsibilities complete!");
+        System.out.println("------");
+
+        //Step 5 - Copying other configuration
+        System.out.println("Step 5 - Copying other configuration");
+
+        JSONObject body = new JSONObject();
+        body.put("projectVersionId", newVersionId);
+        body.put("previousProjectVersionId", currentVersionId);
+        body.put("copyAnalysisProcessingRules", true);
+        body.put("copyBugTrackerConfiguration", true);
+        body.put("copyCurrentStateFpr", true);
+        body.put("copyCustomTags", true);
+
+        HttpResponse<JsonNode> copyOtherConfiguration = Unirest.post(ssc + "/api/v1/projectVersions/action/copyFromPartial")
+                .header("Authorization", "FortifyToken " + token)
+                .header("Content-Type", "application/json; charset=UTF-8")
+                .header("accept", "application/json")
+                .body(body)
+                .asJson();
+
+        System.out.println("Copying other configuration complete!");
         System.out.println("------");
 
     }
