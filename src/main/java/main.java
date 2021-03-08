@@ -1,15 +1,20 @@
+import com.fasterxml.jackson.core.JsonParser;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
+import com.mashape.unirest.http.ObjectMapper;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 
-import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,11 +22,12 @@ import java.util.concurrent.TimeUnit;
 
 public class main {
 
-    private static String ssc = "http://35.156.197.254:8080";
-    public static String token;
-    public static String fileToken;
+    private String ssc = "http://35.158.20.234:8080"; //Syntax: http(s)://<Hostname/IP>:<Port>
+    public String token;
+    public int currentVersionId = 3;
+    public int newVersionId = 47;
 
-    public void createApplication() throws UnirestException {
+    /*public void createApplication() throws UnirestException {
 
         String body = "{  \"name\": \"1\",  \"description\": \"\",  \"active\": true,  \"committed\": false,  \"project\": {    \"name\": \"tokentest\",    \"description\": \"\",    \"issueTemplateId\": \"Prioritized-HighRisk-Project-Template\"  },  \"issueTemplateId\": \"Prioritized-HighRisk-Project-Template\"}";
 
@@ -56,9 +62,9 @@ public class main {
                 .asJson();
 
         System.out.println(getListOfProjectVersions.getBody());
-    }
+    }*/
 
-    //Use-Case 1
+    //Use-Case 1 - Generate a Token
     public void createToken(String tokenType) throws UnirestException {
 
         //create date with time for Token description
@@ -87,9 +93,10 @@ public class main {
         token = (String) createToken.getBody().getObject().getJSONObject("data").get("token");
 
         System.out.println(tokenType + " successfully created: " + token);
+        System.out.println("------");
     }
 
-    //Use-Case 2
+    //Use-Case 2 - Uploading results
     public void uploadResult(int projectVersion, String filePath) throws UnirestException, InterruptedException {
         //upload results
         HttpResponse<JsonNode> uploadResult = Unirest.post(ssc + "/api/v1/projectVersions/" + projectVersion + "/artifacts")
@@ -150,29 +157,88 @@ public class main {
         }
 
     }
-    //Download result test
-    public void downloadResult() throws UnirestException {
-        JSONObject body = new JSONObject();
-        body.put("fileTokenType", 1);
 
-        HttpResponse<JsonNode> getFileToken = Unirest.post(ssc + "/api/v1/fileTokens")
+    //Use-Case 3 - Create a new version of an application
+    public void createNewVersion() throws UnirestException, IOException {
+        //Step 1 - Creating new version (not complete yet).
+        System.out.println("Step 1 - Creating new version");
+        String body = "{  \"name\": \"1\",  \"description\": \"\",  \"active\": true,  \"committed\": false,  \"project\": {    \"name\": \"put_test\",    \"description\": \"\",    \"issueTemplateId\": \"Prioritized-HighRisk-Project-Template\"  },  \"issueTemplateId\": \"Prioritized-HighRisk-Project-Template\"}";
+
+        //ToDo
+        // {
+        //   "name": "3",
+        //   "description": "",
+        //   "active": true,
+        //   "committed": false,
+        //   "project": {
+        //     "name": "swagger",
+        //     "description": "",
+        //     "issueTemplateId": "Prioritized-HighRisk-Project-Template"
+        //     },
+        //   "issueTemplateId": "Prioritized-HighRisk-Project-Template"
+        // }
+
+        HttpResponse<JsonNode> createNewVersion = Unirest.post(ssc + "/api/v1/projectVersions")
                 .header("Authorization", "FortifyToken " + token)
-                .header("Content-Type", "application/json")
+                .header("Content-Type", "application/json; charset=UTF-8")
+                .header("accept", "application/json")
                 .body(body)
                 .asJson();
-        fileToken = (String) getFileToken.getBody().getObject().getJSONObject("data").get("token");
-        System.out.println("File Token: " + fileToken);
 
-        HttpResponse<JsonNode> downloadResult = Unirest.get(ssc + "/download/artifactDownload.html?mat=" + fileToken + "&id=68")
-                .header("Authorization", "FortifyToken " + token)
-                .asJson();
+        System.out.println("Application created!");
+        newVersionId = (int) createNewVersion.getBody().getObject().getJSONObject("data").get("id");
+        System.out.println("New Version ID: " + newVersionId);
+        System.out.println("Current Version ID: " +currentVersionId);
+        System.out.println("------");
+
     }
 
+    public  void getAndPasteAttributes() throws IOException, UnirestException, ParseException {
+        //Step 2 - Copying attributes (Development Phase, Development Strategy, Accessibility, Application Type, etc.)
+        System.out.println("Step 2 - Copying attributes");
+        HttpResponse<JsonNode> getAttributesFromCurrentVersion = Unirest.get(ssc + "/api/v1/projectVersions/" + currentVersionId + "/attributes")
+                .header("Authorization", "FortifyToken " + token)
+                .header("Content-Type", "application/json; charset=UTF-8")
+                .header("accept", "application/json")
+                .asJson();
 
-    public static void main(String[] args) throws UnirestException, FileNotFoundException, InterruptedException {
+        /*//Writing response to json file
+        FileWriter file = new FileWriter("C:/dev/json/output.json");
+        file.write(String.valueOf(getAttributesFromCurrentVersion.getBody().getObject()));
+        file.close();*/
+
+        //print out attributes from currentVersionId
+        //System.out.println("attribute data: " + getAttributesFromCurrentVersion.getBody().getObject().get("data").toString());
+
+        //Paste Attributes in new Version
+        HttpResponse<JsonNode> pasteAttributes = Unirest.put(ssc + "/api/v1/projectVersions/" + newVersionId + "/attributes")
+                .header("Authorization", "FortifyToken " + token)
+                .header("Content-Type", "application/json; charset=UTF-8")
+                .header("accept", "application/json")
+                .body(getAttributesFromCurrentVersion.getBody().getObject().get("data").toString())
+                .asJson();
+
+        System.out.println("Copying complete!");
+        System.out.println("------");
+
+        //Step 3 - Copying users
+        System.out.println("Step 3 - Copying users");
+        HttpResponse<JsonNode> getUsersFromCurrentVersion = Unirest.get(ssc + "/api/v1/projectVersions/" + currentVersionId + "/authEntities")
+                .header("Authorization", "FortifyToken " + token)
+                .header("Content-Type", "application/json; charset=UTF-8")
+                .header("accept", "application/json")
+                .asJson();
+
+
+    }
+
+    public static void main(String[] args) throws UnirestException, IOException, InterruptedException, ParseException {
         main test = new main();
         test.createToken("UnifiedLoginToken");
         //test.uploadResult(3, "C:/dev/Benchmark-master/benchmark.fpr");
+        test.createNewVersion();
+        test.getAndPasteAttributes();
+
 
     }
 }
