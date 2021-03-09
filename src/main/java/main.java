@@ -22,47 +22,14 @@ import java.util.concurrent.TimeUnit;
 
 public class main {
 
-    private String ssc = "http://35.158.20.234:8080"; //Syntax: http(s)://<Hostname/IP>:<Port>
+    private String ssc; //Syntax: http(s)://<Hostname/IP>:<Port>
     public String token;
-    public int currentVersionId = 3;
-    public int newVersionId = 47;
+    public int currentVersionId;
+    public int newVersionId;
 
-    /*public void createApplication() throws UnirestException {
-
-        String body = "{  \"name\": \"1\",  \"description\": \"\",  \"active\": true,  \"committed\": false,  \"project\": {    \"name\": \"tokentest\",    \"description\": \"\",    \"issueTemplateId\": \"Prioritized-HighRisk-Project-Template\"  },  \"issueTemplateId\": \"Prioritized-HighRisk-Project-Template\"}";
-
-        // {
-        //   "name": "3",
-        //   "description": "",
-        //   "active": true,
-        //   "committed": false,
-        //   "project": {
-        //     "name": "swagger",
-        //     "description": "",
-        //     "issueTemplateId": "Prioritized-HighRisk-Project-Template"
-        //     },
-        //   "issueTemplateId": "Prioritized-HighRisk-Project-Template"
-        // }
-
-        HttpResponse<JsonNode> createApplication = Unirest.post(ssc + "/api/v1/projectVersions")
-                .header("Authorization", "FortifyToken " + token)
-                .header("Content-Type", "application/json; charset=UTF-8")
-                .header("accept", "application/json")
-                .body(body)
-                .asJson();
-
-        System.out.println("Application created!");
-        System.out.println(createApplication.getBody());
+    public void setURL(String sscURL) {
+        ssc = sscURL;
     }
-    public void getProjectVersions() throws UnirestException {
-        HttpResponse<JsonNode> getListOfProjectVersions = Unirest.get(ssc + "/api/v1/projectVersions")
-                .header("Authorization", "FortifyToken " + token)
-                .header("Content-Type", "application/json; charset=UTF-8")
-                .header("accept", "application/json")
-                .asJson();
-
-        System.out.println(getListOfProjectVersions.getBody());
-    }*/
 
     //Use-Case 1 - Generate a Token
     public void createToken(String tokenType) throws UnirestException {
@@ -158,31 +125,34 @@ public class main {
 
     }
 
-    //Use-Case 3 - Create a new version of an application
-    public void createNewVersion() throws UnirestException, IOException {
+    //Use-Case 3 - Create a new version of an existing application
+    public void createNewVersion(int currentVersionId) throws UnirestException, IOException {
         //Step 1 - Creating new version (not complete yet).
+        this.currentVersionId = currentVersionId;
         System.out.println("Step 1 - Creating new version");
-        String body = "{  \"name\": \"1\",  \"description\": \"\",  \"active\": true,  \"committed\": false,  \"project\": {    \"name\": \"put_test\",    \"description\": \"\",    \"issueTemplateId\": \"Prioritized-HighRisk-Project-Template\"  },  \"issueTemplateId\": \"Prioritized-HighRisk-Project-Template\"}";
 
-        //ToDo
-        // {
-        //   "name": "3",
-        //   "description": "",
-        //   "active": true,
-        //   "committed": false,
-        //   "project": {
-        //     "name": "swagger",
-        //     "description": "",
-        //     "issueTemplateId": "Prioritized-HighRisk-Project-Template"
-        //     },
-        //   "issueTemplateId": "Prioritized-HighRisk-Project-Template"
-        // }
+        HttpResponse<JsonNode> getCurrentVersion = Unirest.get(ssc + "/api/v1/projectVersions/66")
+                .header("Authorization", "FortifyToken " + token)
+                .header("accept", "application/json")
+                .asJson();
+
+        //create date with time for Token description
+        LocalDateTime myDateObj = LocalDateTime.now();
+        DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("dd-MM-yyyy-HH:mm:ss");
+        String formattedDate = myDateObj.format(myFormatObj);
+
+        JSONObject bodyCreateNewVersion = new JSONObject();
+        bodyCreateNewVersion.put("name", formattedDate);
+        bodyCreateNewVersion.put("description", "");
+        bodyCreateNewVersion.put("active", true);
+        bodyCreateNewVersion.put("project", getCurrentVersion.getBody().getObject().getJSONObject("data").get("project"));
+        bodyCreateNewVersion.put("issueTemplateId", "Prioritized-HighRisk-Project-Template");
 
         HttpResponse<JsonNode> createNewVersion = Unirest.post(ssc + "/api/v1/projectVersions")
                 .header("Authorization", "FortifyToken " + token)
                 .header("Content-Type", "application/json; charset=UTF-8")
                 .header("accept", "application/json")
-                .body(body)
+                .body(bodyCreateNewVersion)
                 .asJson();
 
         System.out.println("Application created!");
@@ -191,9 +161,6 @@ public class main {
         System.out.println("Current Version ID: " +currentVersionId);
         System.out.println("------");
 
-    }
-
-    public  void getAndPasteAttributes() throws IOException, UnirestException, ParseException {
         //Step 2 - Copying attributes (Development Phase, Development Strategy, Accessibility, Application Type, etc.)
         System.out.println("Step 2 - Copying attributes");
         HttpResponse<JsonNode> getAttributesFromCurrentVersion = Unirest.get(ssc + "/api/v1/projectVersions/" + currentVersionId + "/attributes")
@@ -252,33 +219,66 @@ public class main {
         //Step 5 - Copying other configuration
         System.out.println("Step 5 - Copying other configuration");
 
-        JSONObject body = new JSONObject();
-        body.put("projectVersionId", newVersionId);
-        body.put("previousProjectVersionId", currentVersionId);
-        body.put("copyAnalysisProcessingRules", true);
-        body.put("copyBugTrackerConfiguration", true);
-        body.put("copyCurrentStateFpr", true);
-        body.put("copyCustomTags", true);
+        //creating body
+        JSONObject bodyOtherConf = new JSONObject();
+        bodyOtherConf.put("copyAnalysisProcessingRules", true);
+        bodyOtherConf.put("copyBugTrackerConfiguration", true);
+        bodyOtherConf.put("copyCustomTags", true);
+        bodyOtherConf.put("previousProjectVersionId", currentVersionId);
+        bodyOtherConf.put("projectVersionId", newVersionId);
 
         HttpResponse<JsonNode> copyOtherConfiguration = Unirest.post(ssc + "/api/v1/projectVersions/action/copyFromPartial")
                 .header("Authorization", "FortifyToken " + token)
                 .header("Content-Type", "application/json; charset=UTF-8")
                 .header("accept", "application/json")
-                .body(body)
+                .body(bodyOtherConf)
                 .asJson();
 
         System.out.println("Copying other configuration complete!");
         System.out.println("------");
 
+        //Step 6 - Committing new version
+        System.out.println("Step 6 - Committing new version");
+
+        //creating body
+        JSONObject bodyCommitNewVersion = new JSONObject();
+        bodyCommitNewVersion.put("committed", true);
+
+        HttpResponse<JsonNode> commitNewVersion = Unirest.put(ssc + "/api/v1/projectVersions/" + newVersionId)
+                .header("Authorization", "FortifyToken " + token)
+                .header("Content-Type", "application/json; charset=UTF-8")
+                .header("accept", "application/json")
+                .body(bodyCommitNewVersion)
+                .asJson();
+
+        System.out.println("Committing complete!");
+        System.out.println("------");
+
+        //Step 7 - Copying scan results data (needs to take place after commit!)
+        System.out.println("Step 7 - Copying scan results data");
+
+        //create body
+        JSONObject bodyCopyData = new JSONObject();
+        bodyCopyData.put("projectVersionId", newVersionId);
+        bodyCopyData.put("previousProjectVersionId", currentVersionId);
+
+        HttpResponse<JsonNode> copyData = Unirest.post(ssc + "/api/v1/projectVersions/action/copyCurrentState")
+                .header("Authorization", "FortifyToken " + token)
+                .header("Content-Type", "application/json; charset=UTF-8")
+                .header("accept", "application/json")
+                .body(bodyCopyData)
+                .asJson();
+
+        System.out.println("Data copy complete!");
+
     }
 
     public static void main(String[] args) throws UnirestException, IOException, InterruptedException, ParseException {
         main test = new main();
+        test.setURL("http://18.194.11.186:8080");
         test.createToken("UnifiedLoginToken");
         //test.uploadResult(3, "C:/dev/Benchmark-master/benchmark.fpr");
-        test.createNewVersion();
-        test.getAndPasteAttributes();
-
+        test.createNewVersion(66);
 
     }
 }
