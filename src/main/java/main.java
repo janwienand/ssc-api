@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class main {
+class sscAPI {
 
     private String ssc; //Syntax: http(s)://<Hostname/IP>:<Port>
     public String token;
@@ -50,7 +50,6 @@ public class main {
                 .asJson();
 
         //store Token in variable token
-        //String token = (String) createToken.getBody().getObject().getJSONObject("data").get("token");
         token = (String) createToken.getBody().getObject().getJSONObject("data").get("token");
 
         System.out.println(tokenType + " successfully created: " + token);
@@ -59,7 +58,10 @@ public class main {
 
     //Use-Case 2 - Uploading results
     public void uploadResult(int projectVersion, String filePath) throws UnirestException, InterruptedException {
-        //upload results
+
+        //upload results from the given path
+        System.out.println("Start uploading result file from " + filePath);
+
         HttpResponse<JsonNode> uploadResult = Unirest.post(ssc + "/api/v1/projectVersions/" + projectVersion + "/artifacts")
                 .header("Authorization", "FortifyToken " + token)
                 .header("accept", "application/json")
@@ -83,14 +85,15 @@ public class main {
             //store current status
             String currentStatus = (String) checkIfApproved.getBody().getObject().getJSONObject("data").get("status");
 
+            //wait for approval status and automatically approve it when needed
             if (currentStatus.equals("SCHED_PROCESSING") || currentStatus.equals("PROCESSING")){
-                System.out.println("current status: " + currentStatus + ". Wait another 5 seconds...");
+                System.out.println("Current status: " + currentStatus + ". Wait another 5 seconds...");
                 TimeUnit.SECONDS.sleep(5); //wait 5 seconds until next check
                 continue;
 
             } else if(currentStatus.equals("REQUIRE_AUTH")){
-                System.out.println("current status: " + currentStatus);
-                System.out.println("Waiting for approval");
+                System.out.println("Current status: " + currentStatus);
+                System.out.println("Starting automatic approval");
 
                 //create list including artifactId
                 List<Integer> list = new ArrayList<>();
@@ -109,10 +112,10 @@ public class main {
                         .body(body)
                         .asJson();
 
-                System.out.println("Successfully approved");
+                System.out.println("Successfully approved. Processing is starting now!");
                 i++; //end while loop
             } else {
-                System.out.println("current status: " + currentStatus);
+                System.out.println("Current status: " + currentStatus);
                 i++; //end while loop
             }
         }
@@ -125,16 +128,18 @@ public class main {
         this.currentVersionId = currentVersionId;
         System.out.println("Step 1 - Creating new version");
 
+        //get all needed information from current version
         HttpResponse<JsonNode> getCurrentVersion = Unirest.get(ssc + "/api/v1/projectVersions/" + currentVersionId)
                 .header("Authorization", "FortifyToken " + token)
                 .header("accept", "application/json")
                 .asJson();
 
-        //create date with time for Token description
+        //create date with time for new version name
         LocalDateTime myDateObj = LocalDateTime.now();
         DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("dd-MM-yyyy-HH:mm:ss");
         String formattedDate = myDateObj.format(myFormatObj);
 
+        //create body to create new version
         JSONObject bodyCreateNewVersion = new JSONObject();
         bodyCreateNewVersion.put("name", formattedDate);
         bodyCreateNewVersion.put("description", "");
@@ -142,6 +147,7 @@ public class main {
         bodyCreateNewVersion.put("project", getCurrentVersion.getBody().getObject().getJSONObject("data").get("project"));
         bodyCreateNewVersion.put("issueTemplateId", "Prioritized-HighRisk-Project-Template");
 
+        //create new version with parameters from current version
         HttpResponse<JsonNode> createNewVersion = Unirest.post(ssc + "/api/v1/projectVersions")
                 .header("Authorization", "FortifyToken " + token)
                 .header("Content-Type", "application/json; charset=UTF-8")
@@ -157,13 +163,15 @@ public class main {
 
         //Step 2 - Copying attributes (Development Phase, Development Strategy, Accessibility, Application Type, etc.)
         System.out.println("Step 2 - Copying attributes");
+
+        //get all needed attributes from current version
         HttpResponse<JsonNode> getAttributesFromCurrentVersion = Unirest.get(ssc + "/api/v1/projectVersions/" + currentVersionId + "/attributes")
                 .header("Authorization", "FortifyToken " + token)
                 .header("Content-Type", "application/json; charset=UTF-8")
                 .header("accept", "application/json")
                 .asJson();
 
-        //Paste Attributes in new Version
+        //paste attributes in new version
         HttpResponse<JsonNode> pasteAttributes = Unirest.put(ssc + "/api/v1/projectVersions/" + newVersionId + "/attributes")
                 .header("Authorization", "FortifyToken " + token)
                 .header("Content-Type", "application/json; charset=UTF-8")
@@ -176,12 +184,15 @@ public class main {
 
         //Step 3 - Copying users
         System.out.println("Step 3 - Copying users");
+
+        //get all needed authEntities from current version
         HttpResponse<JsonNode> getUsersFromCurrentVersion = Unirest.get(ssc + "/api/v1/projectVersions/" + currentVersionId + "/authEntities")
                 .header("Authorization", "FortifyToken " + token)
                 .header("Content-Type", "application/json; charset=UTF-8")
                 .header("accept", "application/json")
                 .asJson();
 
+        //paste authEntities in new version
         HttpResponse<JsonNode> pasteUsers = Unirest.put(ssc + "/api/v1/projectVersions/" + newVersionId + "/authEntities")
                 .header("Authorization", "FortifyToken " + token)
                 .header("Content-Type", "application/json; charset=UTF-8")
@@ -194,12 +205,15 @@ public class main {
 
         //Step 4 - Copying responsibilities
         System.out.println("Step 4 - Copying responsibilities");
+
+        //get all needed responsibilities from current version
         HttpResponse<JsonNode> getResponsibilitiesFromCurrentVersion = Unirest.get(ssc + "/api/v1/projectVersions/" + currentVersionId + "/responsibilities")
                 .header("Authorization", "FortifyToken " + token)
                 .header("Content-Type", "application/json; charset=UTF-8")
                 .header("accept", "application/json")
                 .asJson();
 
+        //paste responsibilities in new version
         HttpResponse<JsonNode> pasteResponsibilities = Unirest.put(ssc + "/api/v1/projectVersions/" + newVersionId + "/responsibilities")
                 .header("Authorization", "FortifyToken " + token)
                 .header("Content-Type", "application/json; charset=UTF-8")
@@ -213,7 +227,7 @@ public class main {
         //Step 5 - Copying other configuration
         System.out.println("Step 5 - Copying other configuration");
 
-        //creating body
+        //creating body to copy other configuration details
         JSONObject bodyOtherConf = new JSONObject();
         bodyOtherConf.put("copyAnalysisProcessingRules", true);
         bodyOtherConf.put("copyBugTrackerConfiguration", true);
@@ -221,6 +235,7 @@ public class main {
         bodyOtherConf.put("previousProjectVersionId", currentVersionId);
         bodyOtherConf.put("projectVersionId", newVersionId);
 
+        //copy other configuration details from current to new version
         HttpResponse<JsonNode> copyOtherConfiguration = Unirest.post(ssc + "/api/v1/projectVersions/action/copyFromPartial")
                 .header("Authorization", "FortifyToken " + token)
                 .header("Content-Type", "application/json; charset=UTF-8")
@@ -234,10 +249,11 @@ public class main {
         //Step 6 - Committing new version
         System.out.println("Step 6 - Committing new version");
 
-        //creating body
+        //creating body for commit of new version
         JSONObject bodyCommitNewVersion = new JSONObject();
         bodyCommitNewVersion.put("committed", true);
 
+        //committing new version
         HttpResponse<JsonNode> commitNewVersion = Unirest.put(ssc + "/api/v1/projectVersions/" + newVersionId)
                 .header("Authorization", "FortifyToken " + token)
                 .header("Content-Type", "application/json; charset=UTF-8")
@@ -251,11 +267,12 @@ public class main {
         //Step 7 - Copying scan results data (needs to take place after commit!)
         System.out.println("Step 7 - Copying scan results data");
 
-        //create body
+        //create body for copying scan results data
         JSONObject bodyCopyData = new JSONObject();
         bodyCopyData.put("projectVersionId", newVersionId);
         bodyCopyData.put("previousProjectVersionId", currentVersionId);
 
+        //start the scan results data copy process
         HttpResponse<JsonNode> copyData = Unirest.post(ssc + "/api/v1/projectVersions/action/copyCurrentState")
                 .header("Authorization", "FortifyToken " + token)
                 .header("Content-Type", "application/json; charset=UTF-8")
@@ -267,12 +284,12 @@ public class main {
 
     }
 
-    public static void main(String[] args) throws UnirestException {
-        main test = new main();
+    public static void main(String[] args) throws UnirestException, InterruptedException {
+        sscAPI test = new sscAPI();
         test.setURL("http://18.194.11.186:8080");
         test.createToken("UnifiedLoginToken");
-        //test.uploadResult(3, "C:/dev/Benchmark-master/benchmark.fpr");
-        test.createNewVersion(3);
+        //test.uploadResult(81, "C:/dev/Benchmark-master/benchmark.fpr");
+        //test.createNewVersion(3);
 
     }
 }
