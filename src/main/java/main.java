@@ -287,9 +287,10 @@ class sscAPI {
     public static void main(String[] args) throws UnirestException, InterruptedException {
         sscAPI test = new sscAPI();
         test.setURL("http://18.194.11.186:8080");
-        test.createToken("UnifiedLoginToken");
-        //test.uploadResult(81, "C:/dev/Benchmark-master/benchmark.fpr");
-        //test.createNewVersion(3);
 
+        test.createToken("UnifiedLoginToken"); //must always be enabled
+
+        //test.uploadResult(85, "C:/dev/ssc-api/juice-shop.fpr");
+        //test.createNewVersion(85);
     }
 }
