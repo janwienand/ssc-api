@@ -1,20 +1,14 @@
-import com.fasterxml.jackson.core.JsonParser;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
-import com.mashape.unirest.http.ObjectMapper;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -126,12 +120,12 @@ public class main {
     }
 
     //Use-Case 3 - Create a new version of an existing application
-    public void createNewVersion(int currentVersionId) throws UnirestException, IOException {
+    public void createNewVersion(int currentVersionId) throws UnirestException {
         //Step 1 - Creating new version (not complete yet).
         this.currentVersionId = currentVersionId;
         System.out.println("Step 1 - Creating new version");
 
-        HttpResponse<JsonNode> getCurrentVersion = Unirest.get(ssc + "/api/v1/projectVersions/66")
+        HttpResponse<JsonNode> getCurrentVersion = Unirest.get(ssc + "/api/v1/projectVersions/" + currentVersionId)
                 .header("Authorization", "FortifyToken " + token)
                 .header("accept", "application/json")
                 .asJson();
@@ -273,12 +267,12 @@ public class main {
 
     }
 
-    public static void main(String[] args) throws UnirestException, IOException, InterruptedException, ParseException {
+    public static void main(String[] args) throws UnirestException {
         main test = new main();
         test.setURL("http://18.194.11.186:8080");
         test.createToken("UnifiedLoginToken");
         //test.uploadResult(3, "C:/dev/Benchmark-master/benchmark.fpr");
-        test.createNewVersion(66);
+        test.createNewVersion(3);
 
     }
 }
