@@ -1,4 +1,4 @@
-# ssc-api
+# Fortify Software Security Center API Use Cases
 
 How to use it:
 1. create a new sscAPI object
